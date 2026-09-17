@@ -7,6 +7,6 @@
     - role: puppet
       vars:
         puppetserver_certname: puppet
-        puppetserver_java_min_heap: "256m"
-        puppetserver_java_max_heap: "512m"
+        puppetserver_java_min_heap: "512m"
+        puppetserver_java_max_heap: "1024m"
         puppet_manage_command_symlink: true

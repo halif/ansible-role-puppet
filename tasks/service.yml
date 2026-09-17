@@ -1,5 +1,23 @@
 ---
-- name: Enable and start Puppet Server
+- name: Ensure Puppet Server systemd override directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/puppetserver.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configure Puppet Server systemd timeout
+  ansible.builtin.template:
+    src: puppetserver.service.j2
+    dest: /etc/systemd/system/puppetserver.service.d/override.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Restart puppetserver
+
+- name: Ensure Puppet Server is enabled and running
   ansible.builtin.systemd:
     name: "{{ puppetserver_service_name }}"
     enabled: true
