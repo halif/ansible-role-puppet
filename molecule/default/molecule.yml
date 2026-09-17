@@ -7,7 +7,7 @@ driver:
 
 platforms:
   - name: puppet-server
-    image: "molecule-puppet-ubuntu2204"
+    image: "molecule-puppet-ubuntu2004"
     dockerfile: Dockerfile
     pre_build_image: false
     privileged: true

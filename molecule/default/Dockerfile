@@ -1,7 +1,6 @@
-FROM ubuntu:22.04
+FROM ubuntu:20.04
 
 ENV container=docker
-
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
