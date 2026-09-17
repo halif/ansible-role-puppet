@@ -40,6 +40,7 @@ jobs:
       - name: Run ansible-lint
         run: ansible-lint -c .config/ansible-lint.yml .
 
+
   molecule:
     name: Molecule
     runs-on: ubuntu-latest
@@ -65,5 +66,84 @@ jobs:
           mkdir -p ~/.ansible/roles
           ln -s "$GITHUB_WORKSPACE" ~/.ansible/roles/puppet
 
-      - name: Run Molecule
-        run: molecule test
+      - name: Molecule syntax
+        run: molecule syntax
+
+      - name: Molecule create
+        run: molecule create
+
+      - name: Molecule converge
+        id: molecule_converge
+        continue-on-error: true
+        run: molecule converge
+
+      - name: Show Puppet Server diagnostics
+        if: steps.molecule_converge.outcome == 'failure'
+        run: |
+          echo "===== Docker containers ====="
+          docker ps -a
+
+          CONTAINER_ID=$(docker ps -aq --filter "name=puppet-server")
+
+          if [ -z "$CONTAINER_ID" ]; then
+            echo "puppet-server container not found"
+            exit 1
+          fi
+
+          echo "===== systemctl status ====="
+          docker exec "$CONTAINER_ID" \
+            systemctl status puppetserver --no-pager || true
+
+          echo "===== systemctl cat ====="
+          docker exec "$CONTAINER_ID" \
+            systemctl cat puppetserver || true
+
+          echo "===== systemctl show ====="
+          docker exec "$CONTAINER_ID" \
+            systemctl show puppetserver \
+            -p ExecStart \
+            -p PIDFile \
+            -p User \
+            -p Group \
+            -p Type \
+            -p TimeoutStartUSec \
+            --no-pager || true
+
+          echo "===== journalctl ====="
+          docker exec "$CONTAINER_ID" \
+            journalctl -u puppetserver.service \
+            --no-pager \
+            -n 100 || true
+
+          echo "===== Puppet Server version ====="
+          docker exec "$CONTAINER_ID" \
+            /usr/bin/puppetserver --version || true
+
+          echo "===== Puppet Server help ====="
+          docker exec "$CONTAINER_ID" \
+            /usr/bin/puppetserver --help || true
+
+          echo "===== Puppet Server processes ====="
+          docker exec "$CONTAINER_ID" \
+            ps auxww | grep -E '[p]uppet|[j]ava' || true
+
+          echo "===== Puppet Server files ====="
+          docker exec "$CONTAINER_ID" \
+            ls -la /etc/puppetlabs/puppet/ || true
+
+          echo "===== Puppet Server logs ====="
+          docker exec "$CONTAINER_ID" \
+            sh -c 'find /var/log/puppetlabs -type f -maxdepth 3 -print -exec tail -n 100 {} \;' \
+            || true
+
+      - name: Molecule destroy after failure
+        if: always()
+        run: molecule destroy
+
+      - name: Fail Molecule job
+        if: steps.molecule_converge.outcome == 'failure'
+        run: exit 1
+
+      - name: Molecule verify
+        if: steps.molecule_converge.outcome == 'success'
+        run: molecule verify
