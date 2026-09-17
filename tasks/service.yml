@@ -18,8 +18,48 @@
     - Restart puppetserver
 
 - name: Ensure Puppet Server is enabled and running
-  ansible.builtin.systemd:
-    name: "{{ puppetserver_service_name }}"
-    enabled: true
-    state: started
-    daemon_reload: true
+  block:
+    - name: Enable and start Puppet Server
+      ansible.builtin.systemd:
+        name: "{{ puppetserver_service_name }}"
+        enabled: true
+        state: started
+        daemon_reload: true
+
+  rescue:
+    - name: Get Puppet Server systemd status
+      ansible.builtin.command:
+        cmd: systemctl status puppetserver --no-pager
+      register: puppetserver_status
+      changed_when: false
+      failed_when: false
+
+    - name: Show Puppet Server systemd status
+      ansible.builtin.debug:
+        var: puppetserver_status.stdout_lines
+
+    - name: Get Puppet Server journal
+      ansible.builtin.command:
+        cmd: journalctl -u puppetserver.service --no-pager -n 100
+      register: puppetserver_journal
+      changed_when: false
+      failed_when: false
+
+    - name: Show Puppet Server journal
+      ansible.builtin.debug:
+        var: puppetserver_journal.stdout_lines
+
+    - name: Get Puppet Server application log
+      ansible.builtin.command:
+        cmd: cat /var/log/puppetlabs/puppetserver/puppetserver.log
+      register: puppetserver_log
+      changed_when: false
+      failed_when: false
+
+    - name: Show Puppet Server application log
+      ansible.builtin.debug:
+        var: puppetserver_log.stdout_lines
+
+    - name: Fail because Puppet Server did not start
+      ansible.builtin.fail:
+        msg: "Puppet Server failed to start. See the systemd and Puppet Server logs above."
