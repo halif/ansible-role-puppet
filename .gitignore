@@ -1,0 +1,29 @@
+# Python / virtualenv
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Ansible
+.ansible/
+*.retry
+.vault-password-file
+
+# Molecule
+.molecule/
+
+# Ansible Galaxy
+*.tar.gz
+
+# Cache / test
+.cache/
+.pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
