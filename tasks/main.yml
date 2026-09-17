@@ -1,2 +1,13 @@
 ---
-# tasks file for ansible-role-puppet
+- name: Configure Puppet repository
+  ansible.builtin.import_tasks: repository.yml
+  when: puppet_manage_repository | bool
+
+- name: Install Puppet Server
+  ansible.builtin.import_tasks: install.yml
+
+- name: Configure Puppet Server
+  ansible.builtin.import_tasks: configure.yml
+
+- name: Configure Puppet Server service
+  ansible.builtin.import_tasks: service.yml

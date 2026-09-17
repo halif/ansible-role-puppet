@@ -1,0 +1,28 @@
+---
+- name: Ensure Puppet configuration directory exists
+  ansible.builtin.file:
+    path: "{{ puppet_conf_dir }}"
+    state: directory
+    owner: puppet
+    group: puppet
+    mode: "0755"
+
+- name: Configure Puppet Server puppet.conf
+  ansible.builtin.template:
+    src: puppet.conf.j2
+    dest: "{{ puppet_conf_file }}"
+    owner: puppet
+    group: puppet
+    mode: "0644"
+  notify:
+    - Restart puppetserver
+
+- name: Configure Puppet Server JVM
+  ansible.builtin.template:
+    src: puppetserver.j2
+    dest: /etc/default/puppetserver
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Restart puppetserver

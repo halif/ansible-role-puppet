@@ -1,6 +1,7 @@
 ---
-- name: Restart puppetserver
+- name: Enable and start Puppet Server
   ansible.builtin.systemd:
     name: "{{ puppetserver_service_name }}"
-    state: restarted
+    enabled: true
+    state: started
     daemon_reload: true

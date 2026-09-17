@@ -1,2 +1,70 @@
 ---
-# defaults file for ansible-role-puppet
+# Puppet major version
+puppet_version: "7"
+
+# Puppet packages
+puppetserver_package_name: "puppetserver"
+
+# Puppet service
+puppetserver_service_name: "puppetserver"
+
+# Puppet configuration
+puppet_conf_dir: "/etc/puppetlabs/puppet"
+puppet_conf_file: "/etc/puppetlabs/puppet/puppet.conf"
+
+# Puppet Server identity
+#
+# This name must resolve to the Puppet Server from Puppet agents
+# and must be present in the Puppet Server certificate.
+puppetserver_certname: "puppet"
+
+# Puppet environment
+puppet_environment: "production"
+
+# Puppet Server port
+puppetserver_port: 8140
+
+# Supported Ubuntu releases
+puppet_supported_releases:
+  - focal
+  - jammy
+
+# Puppet APT repository
+puppet_repository_url: "https://apt.puppet.com"
+puppet_repository_component: "puppet7"
+
+# Puppet repository release package.
+# The Ubuntu release is detected automatically from Ansible facts.
+puppet_release_package_url: >-
+  {{ puppet_repository_url }}/puppet{{ puppet_version }}-release-{{ ansible_distribution_release }}.deb
+
+# Repository package downloaded locally
+puppet_release_package_path: >-
+  /tmp/puppet{{ puppet_version }}-release-{{ ansible_distribution_release }}.deb
+
+# Whether to manage the Puppet repository
+puppet_manage_repository: true
+
+# Whether to run apt update after repository installation
+puppet_apt_update: true
+
+# Puppet Server JVM configuration
+#
+# Empty by default so the package's upstream/default JVM settings
+# are preserved unless explicitly overridden by the user.
+puppetserver_java_min_heap: ""
+puppetserver_java_max_heap: ""
+
+# Additional JVM arguments.
+puppetserver_java_extra_args:
+  - "-Djruby.logger.class=com.puppetlabs.jruby_utils.jruby.Slf4jLogger"
+
+# Create /usr/local/bin/puppet -> /opt/puppetlabs/bin/puppet
+#
+# This allows:
+#   sudo puppet agent -t
+#
+# without modifying sudoers.
+puppet_manage_command_symlink: true
+puppet_command_symlink: "/usr/local/bin/puppet"
+puppet_command_path: "/opt/puppetlabs/bin/puppet"

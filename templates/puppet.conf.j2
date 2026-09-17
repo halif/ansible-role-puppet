@@ -1,0 +1,11 @@
+[main]
+certname = {{ puppetserver_certname }}
+server = {{ puppetserver_certname }}
+environment = {{ puppet_environment }}
+runinterval = 30m
+
+[server]
+vardir = /opt/puppetlabs/server/data/puppetserver
+logdir = /var/log/puppetlabs/puppetserver
+rundir = /var/run/puppetlabs/puppetserver
+ssldir = /etc/puppetlabs/puppet/ssl
