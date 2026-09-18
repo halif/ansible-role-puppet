@@ -22,7 +22,12 @@
     path: /etc/default/puppetserver
     regexp: '^JAVA_ARGS='
     line: >-
-      JAVA_ARGS="{% if puppetserver_java_min_heap %}-Xms{{ puppetserver_java_min_heap }} {% endif %}{% if puppetserver_java_max_heap %}-Xmx{{ puppetserver_java_max_heap }} {% endif %}{% for arg in puppetserver_java_extra_args %}{{ arg }}{% if not loop.last %} {% endif %}{% endfor %}"
+      JAVA_ARGS="{% if puppetserver_java_min_heap %}
+      -Xms{{ puppetserver_java_min_heap }}
+      {% endif %}{% if puppetserver_java_max_heap %}
+      -Xmx{{ puppetserver_java_max_heap }}
+      {% endif %}{% for arg in puppetserver_java_extra_args %}
+      {{ arg }}{% if not loop.last %} {% endif %}{% endfor %}"
     state: present
   when:
     - puppetserver_java_min_heap | length > 0
