@@ -20,23 +20,84 @@
           - "'puppet-agent' in ansible_facts.packages"
         fail_msg: "Puppet Agent package is not installed"
 
-    - name: Wait for Puppet Server service
-      ansible.builtin.service_facts:
-      register: puppet_service_facts
+    - name: Check Puppet Server is enabled
+      ansible.builtin.command:
+        cmd: systemctl is-enabled puppetserver
+      register: puppetserver_enabled
+      changed_when: false
+      failed_when: false
+
+    - name: Wait for Puppet Server to become active
+      ansible.builtin.command:
+        cmd: systemctl is-active puppetserver
+      register: puppetserver_active
+      changed_when: false
+      failed_when: false
       retries: 30
       delay: 2
-      until:
-        - "'puppetserver.service' in puppet_service_facts.ansible_facts.services"
-        - >-
-          puppet_service_facts.ansible_facts.services['puppetserver.service'].state
-          == 'running'
+      until: puppetserver_active.stdout | trim == "active"
+
+    - name: Show Puppet Server status
+      ansible.builtin.command:
+        cmd: systemctl status puppetserver --no-pager
+      register: puppetserver_status
+      changed_when: false
+      failed_when: false
+      when: puppetserver_active.stdout | trim != "active"
+
+    - name: Show Puppet Server journal
+      ansible.builtin.command:
+        cmd: journalctl -u puppetserver.service --no-pager -n 200
+      register: puppetserver_journal
+      changed_when: false
+      failed_when: false
+      when: puppetserver_active.stdout | trim != "active"
+
+    - name: Show Puppet Server processes
+      ansible.builtin.shell:
+        cmd: ps auxww | grep -E '[p]uppet|[j]ava'
+      register: puppetserver_processes
+      changed_when: false
+      failed_when: false
+      when: puppetserver_active.stdout | trim != "active"
+
+    - name: Show Puppet Server port
+      ansible.builtin.shell:
+        cmd: ss -lntp | grep ':8140' || true
+      register: puppetserver_port
+      changed_when: false
+      failed_when: false
+      when: puppetserver_active.stdout | trim != "active"
+
+    - name: Print Puppet Server status
+      ansible.builtin.debug:
+        var: puppetserver_status.stdout_lines
+      when: puppetserver_active.stdout | trim != "active"
+
+    - name: Print Puppet Server journal
+      ansible.builtin.debug:
+        var: puppetserver_journal.stdout_lines
+      when: puppetserver_active.stdout | trim != "active"
+
+    - name: Print Puppet Server processes
+      ansible.builtin.debug:
+        var: puppetserver_processes.stdout_lines
+      when: puppetserver_active.stdout | trim != "active"
+
+    - name: Print Puppet Server port
+      ansible.builtin.debug:
+        var: puppetserver_port.stdout_lines
+      when: puppetserver_active.stdout | trim != "active"
 
     - name: Verify Puppet Server service
       ansible.builtin.assert:
         that:
-          - puppet_service_facts.ansible_facts.services['puppetserver.service'].state == 'running'
-          - puppet_service_facts.ansible_facts.services['puppetserver.service'].status == 'enabled'
-        fail_msg: "Puppet Server service is not running and enabled"
+          - puppetserver_enabled.stdout | trim == "enabled"
+          - puppetserver_active.stdout | trim == "active"
+        fail_msg: >-
+          Puppet Server service is not running and enabled.
+          enabled={{ puppetserver_enabled.stdout | trim }},
+          active={{ puppetserver_active.stdout | trim }}
 
     - name: Wait for Puppet Server port
       ansible.builtin.wait_for:
