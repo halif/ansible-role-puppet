@@ -18,11 +18,14 @@
     - Restart puppetserver
 
 - name: Configure Puppet Server JVM
-  ansible.builtin.template:
-    src: puppetserver.j2
-    dest: /etc/default/puppetserver
-    owner: root
-    group: root
-    mode: "0644"
+  ansible.builtin.lineinfile:
+    path: /etc/default/puppetserver
+    regexp: '^JAVA_ARGS='
+    line: >-
+      JAVA_ARGS="{% if puppetserver_java_min_heap %}-Xms{{ puppetserver_java_min_heap }} {% endif %}{% if puppetserver_java_max_heap %}-Xmx{{ puppetserver_java_max_heap }} {% endif %}{% for arg in puppetserver_java_extra_args %}{{ arg }}{% if not loop.last %} {% endif %}{% endfor %}"
+    state: present
+  when:
+    - puppetserver_java_min_heap | length > 0
+      or puppetserver_java_max_heap | length > 0
   notify:
     - Restart puppetserver

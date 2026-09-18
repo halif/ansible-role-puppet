@@ -1,19 +1,8 @@
 ---
-- name: Ensure Puppet Server systemd override directory exists
+- name: Remove obsolete Puppet Server systemd override
   ansible.builtin.file:
     path: /etc/systemd/system/puppetserver.service.d
-    state: directory
-    owner: root
-    group: root
-    mode: "0755"
-
-- name: Configure Puppet Server systemd service
-  ansible.builtin.template:
-    src: puppetserver.service.j2
-    dest: /etc/systemd/system/puppetserver.service.d/override.conf
-    owner: root
-    group: root
-    mode: "0644"
+    state: absent
   notify:
     - Restart puppetserver
 
