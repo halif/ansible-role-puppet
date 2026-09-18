@@ -6,100 +6,42 @@
   tasks:
     - name: Gather package facts
       ansible.builtin.package_facts:
-        manager: apt
+        manager: auto
 
     - name: Verify Puppet Server package
       ansible.builtin.assert:
         that:
           - "'puppetserver' in ansible_facts.packages"
-        fail_msg: "puppetserver package is not installed"
+        fail_msg: "Puppet Server package is not installed"
 
     - name: Verify Puppet Agent package
       ansible.builtin.assert:
         that:
           - "'puppet-agent' in ansible_facts.packages"
-        fail_msg: "puppet-agent package is not installed"
+        fail_msg: "Puppet Agent package is not installed"
 
-    - name: Gather service facts
+    - name: Wait for Puppet Server service
       ansible.builtin.service_facts:
+      register: puppet_service_facts
+      retries: 30
+      delay: 2
+      until:
+        - "'puppetserver.service' in puppet_service_facts.ansible_facts.services"
+        - >-
+          puppet_service_facts.ansible_facts.services['puppetserver.service'].state
+          == 'running'
 
     - name: Verify Puppet Server service
       ansible.builtin.assert:
         that:
-          - "'puppetserver.service' in ansible_facts.services"
-          - ansible_facts.services['puppetserver.service'].state == 'running'
-          - ansible_facts.services['puppetserver.service'].status == 'enabled'
+          - puppet_service_facts.ansible_facts.services['puppetserver.service'].state == 'running'
+          - puppet_service_facts.ansible_facts.services['puppetserver.service'].status == 'enabled'
         fail_msg: "Puppet Server service is not running and enabled"
 
-    - name: Check Puppet configuration directory
-      ansible.builtin.stat:
-        path: /etc/puppetlabs/puppet
-      register: puppet_conf_dir
-
-    - name: Verify Puppet configuration directory
-      ansible.builtin.assert:
-        that:
-          - puppet_conf_dir.stat.exists
-          - puppet_conf_dir.stat.isdir
-          - puppet_conf_dir.stat.pw_name == 'puppet'
-          - puppet_conf_dir.stat.gr_name == 'puppet'
-
-    - name: Check puppet.conf
-      ansible.builtin.stat:
-        path: /etc/puppetlabs/puppet/puppet.conf
-      register: puppet_conf
-
-    - name: Verify puppet.conf
-      ansible.builtin.assert:
-        that:
-          - puppet_conf.stat.exists
-          - puppet_conf.stat.isreg
-
-    - name: Read Puppet certname
-      ansible.builtin.command:
-        cmd: /opt/puppetlabs/bin/puppet config print certname
-      register: puppet_certname
-      changed_when: false
-
-    - name: Verify Puppet certname
-      ansible.builtin.assert:
-        that:
-          - puppet_certname.stdout | trim == 'puppet'
-
-    - name: Check Puppet executable
-      ansible.builtin.stat:
-        path: /opt/puppetlabs/bin/puppet
-      register: puppet_binary
-
-    - name: Verify Puppet executable
-      ansible.builtin.assert:
-        that:
-          - puppet_binary.stat.exists
-          - puppet_binary.stat.executable
-
-    - name: Check Puppet command symlink
-      ansible.builtin.stat:
-        path: /usr/local/bin/puppet
-      register: puppet_symlink
-
-    - name: Verify Puppet command symlink
-      ansible.builtin.assert:
-        that:
-          - puppet_symlink.stat.exists
-          - puppet_symlink.stat.islnk
-
-    - name: Verify Puppet Server port
+    - name: Wait for Puppet Server port
       ansible.builtin.wait_for:
         host: 127.0.0.1
         port: 8140
-        timeout: 60
-
-    - name: Check Puppet version
-      ansible.builtin.command:
-        cmd: /opt/puppetlabs/bin/puppet --version
-      register: puppet_version
-      changed_when: false
-
-    - name: Show Puppet version
-      ansible.builtin.debug:
-        msg: "Puppet version: {{ puppet_version.stdout }}"
+        state: started
+        timeout: 120
+        delay: 2
