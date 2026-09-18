@@ -40,7 +40,6 @@ jobs:
       - name: Run ansible-lint
         run: ansible-lint -c .config/ansible-lint.yml .
 
-
   molecule:
     name: Molecule
     runs-on: ubuntu-latest
@@ -102,11 +101,14 @@ jobs:
           docker exec "$CONTAINER_ID" \
             systemctl show puppetserver \
             -p ExecStart \
+            -p ExecStop \
+            -p ExecReload \
             -p PIDFile \
             -p User \
             -p Group \
             -p Type \
             -p TimeoutStartUSec \
+            -p TimeoutStopUSec \
             --no-pager || true
 
           echo "===== journalctl ====="
@@ -117,11 +119,11 @@ jobs:
 
           echo "===== Puppet Server version ====="
           docker exec "$CONTAINER_ID" \
-            /usr/bin/puppetserver --version || true
+            /opt/puppetlabs/server/apps/puppetserver/bin/puppetserver --version || true
 
           echo "===== Puppet Server help ====="
           docker exec "$CONTAINER_ID" \
-            /usr/bin/puppetserver --help || true
+            /opt/puppetlabs/server/apps/puppetserver/bin/puppetserver --help || true
 
           echo "===== Puppet Server processes ====="
           docker exec "$CONTAINER_ID" \
@@ -133,17 +135,17 @@ jobs:
 
           echo "===== Puppet Server logs ====="
           docker exec "$CONTAINER_ID" \
-            sh -c 'find /var/log/puppetlabs -type f -maxdepth 3 -print -exec tail -n 100 {} \;' \
+            sh -c 'find /var/log/puppetlabs -maxdepth 3 -type f -print -exec tail -n 100 {} \;' \
             || true
 
-      - name: Molecule destroy after failure
+      - name: Molecule verify
+        if: steps.molecule_converge.outcome == 'success'
+        run: molecule verify
+
+      - name: Molecule destroy
         if: always()
         run: molecule destroy
 
       - name: Fail Molecule job
         if: steps.molecule_converge.outcome == 'failure'
         run: exit 1
-
-      - name: Molecule verify
-        if: steps.molecule_converge.outcome == 'success'
-        run: molecule verify
